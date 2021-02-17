@@ -15,7 +15,7 @@
 #if TARGET_OS_TV
 @import GameController;
 
-@interface StreamFrameViewController : GCEventViewController <ConnectionCallbacks, InputPresenceDelegate, UserInteractionDelegate, UIScrollViewDelegate>
+@interface StreamFrameViewController : GCEventViewController <ConnectionCallbacks, InputPresenceDelegate, UserInteractionDelegate, UIScrollViewDelegate, UITextFieldDelegate>
 #else
 @interface StreamFrameViewController : UIViewController <ConnectionCallbacks, InputPresenceDelegate, UserInteractionDelegate, UIScrollViewDelegate>
 #endif

@@ -139,6 +139,8 @@ static UIImage* noImage;
     if (appImage != nil) {
         // This size of image might be blank image received from GameStream.
         // TODO: Improve no-app image detection
+        // JKO there appears to be a bug here. Overcooked box art is 628 x 888 but it is certainly
+        // not a blank image, which this code seems to assume.
         if (!(appImage.size.width == 130.f && appImage.size.height == 180.f) && // GFE 2.0
             !(appImage.size.width == 628.f && appImage.size.height == 888.f)) { // GFE 3.0
             [_appImage setImage:appImage];

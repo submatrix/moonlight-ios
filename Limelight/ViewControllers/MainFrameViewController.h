@@ -15,7 +15,9 @@
 #import "AppAssetManager.h"
 #import "SWRevealViewController.h"
 
-@interface MainFrameViewController : UICollectionViewController <DiscoveryCallback, PairCallback, HostCallback, AppCallback, AppAssetCallback, NSURLConnectionDelegate, SWRevealViewControllerDelegate>
+@interface MainFrameViewController : UICollectionViewController <DiscoveryCallback, PairCallback, HostCallback,
+                                                                 AppCallback, AppAssetCallback, NSURLConnectionDelegate,
+                                                                 SWRevealViewControllerDelegate>
 
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *settingsButton;
 #if !TARGET_OS_TV

@@ -398,4 +398,19 @@
     event->modifierKeycode = 0x12;
 }
 
+// Take an input string and sends it to the remote server, one virtual keyboard press at a time
++ (void)sendTextInput:(NSString*)input;
+{
+    unichar c;
+    struct KeyEvent event;
+    for (int i = 0; i < [input length]; ++i) {
+        c = [input characterAtIndex:i];
+        event = [self translateKeyEvent:c withModifierFlags:0];
+
+        LiSendKeyboardEvent(event.keycode, KEY_ACTION_DOWN, 0);
+        usleep(50 * 1000);
+        LiSendKeyboardEvent(event.keycode, KEY_ACTION_UP, 0);
+    }
+}
+
 @end

@@ -93,6 +93,8 @@
 - (void)displayLinkCallback:(CADisplayLink *)sender
 {
     // No-op - rendering done in submitDecodeBuffer
+    // JKO check if this is called at >60fps when refreshRate as above is >60, and if so, can I use
+    // this to receive frames from host at >60fps?
 }
 
 - (void)cleanup
