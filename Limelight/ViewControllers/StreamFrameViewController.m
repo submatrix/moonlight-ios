@@ -12,6 +12,7 @@
 #import "StreamManager.h"
 #import "ControllerSupport.h"
 #import "DataManager.h"
+#import "KeyboardSupport.h"
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -27,6 +28,7 @@
     UITapGestureRecognizer *_menuTapGestureRecognizer;
     UITapGestureRecognizer *_menuDoubleTapGestureRecognizer;
     UITapGestureRecognizer *_playPauseTapGestureRecognizer;
+    UITapGestureRecognizer *_playPauseDoubleTapGestureRecognizer;
     UITextView *_overlayView;
     UILabel *_stageLabel;
     UILabel *_tipLabel;
@@ -35,7 +37,7 @@
     UIScrollView *_scrollView;
     BOOL _userIsInteracting;
     CGSize _keyboardSize;
-    
+    UITextField* _fakeTextField; // An invisible text field for virtual keyboard
 #if !TARGET_OS_TV
     UIScreenEdgePanGestureRecognizer *_exitSwipeRecognizer;
 #endif
@@ -59,6 +61,11 @@
 - (void)controllerPlayPauseButtonPressed:(id)sender {
     Log(LOG_I, @"Play/Pause button pressed -- backing out of stream");
     [self returnToMainFrame];
+
+- (void)remotePlayPauseButtonPressed:(id)sender { }
+- (void)remotePlayPauseButtonDoublePressed:(id)sender {
+    Log(LOG_I, @"Play/pause double-pressed -- showing virtual keyboard");
+    [_fakeTextField becomeFirstResponder]; // Show the virtual keyboard
 }
 #endif
 
@@ -115,7 +122,19 @@
     [self.view addGestureRecognizer:_menuTapGestureRecognizer];
     [self.view addGestureRecognizer:_menuDoubleTapGestureRecognizer];
     [self.view addGestureRecognizer:_playPauseTapGestureRecognizer];
-
+    
+    if (!_playPauseGestureRecognizer || !_playPauseDoubleTapGestureRecognizer) {
+        _playPauseGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(remotePlayPauseButtonPressed:)];
+        _playPauseGestureRecognizer.allowedPressTypes = @[@(UIPressTypePlayPause)];
+        
+        _playPauseDoubleTapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(remotePlayPauseButtonDoublePressed:)];
+        _playPauseDoubleTapGestureRecognizer.numberOfTapsRequired = 2;
+        [_playPauseGestureRecognizer requireGestureRecognizerToFail:_playPauseDoubleTapGestureRecognizer];
+        _playPauseDoubleTapGestureRecognizer.allowedPressTypes = @[@(UIPressTypePlayPause)];
+    }
+    
+    [self.view addGestureRecognizer:_playPauseGestureRecognizer];
+    [self.view addGestureRecognizer:_playPauseDoubleTapGestureRecognizer];
 #else
     _exitSwipeRecognizer = [[UIScreenEdgePanGestureRecognizer alloc] initWithTarget:self action:@selector(edgeSwiped)];
     _exitSwipeRecognizer.edges = UIRectEdgeLeft;
@@ -197,6 +216,14 @@
     [self.view addSubview:_stageLabel];
     [self.view addSubview:_spinner];
     [self.view addSubview:_tipLabel];
+    
+    // JKO add invisible UITextField to force popup keyboard
+    _fakeTextField = [[UITextField alloc] initWithFrame:self.view.frame];
+    [_fakeTextField setBackgroundColor:[UIColor clearColor]];
+    [_fakeTextField setBorderStyle:UITextBorderStyleNone];
+    //[_fakeTextField setText:@"HELLO"];
+    [_fakeTextField setDelegate:self];
+    [self.view insertSubview:_fakeTextField atIndex:0];
 }
 
 - (UIView *)viewForZoomingInScrollView:(UIScrollView *)scrollView {
@@ -616,5 +643,13 @@
     return [GCMouse mice].count > 0;
 }
 #endif
+
+- (BOOL)textFieldShouldReturn:(UITextField *)textField {
+    NSLog(@"textfield text is %@", [textField text]);
+    [KeyboardSupport sendTextInput:[textField text]]; // Send the input text to the remote server
+    [textField resignFirstResponder];
+    
+    return YES;
+}
 
 @end

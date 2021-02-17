@@ -52,7 +52,9 @@
     FrontViewPosition currentPosition;
     NSArray* _sortedAppList;
     NSCache* _boxArtCache;
+    NSCache* _backgroundCache; // Box art stretched to fill view frame dimensions
     bool _background;
+    UIVisualEffectView* _blurredBackgroundView;
 #if TARGET_OS_TV
     UITapGestureRecognizer* _menuRecognizer;
 #endif
@@ -845,6 +847,30 @@ static NSMutableSet* hostList;
 }
 #endif
 
+- (void)collectionView:(UICollectionView *)collectionView
+didUpdateFocusInContext:(UICollectionViewFocusUpdateContext *)context
+withAnimationCoordinator:(UIFocusAnimationCoordinator *)coordinator {
+    if ([context previouslyFocusedIndexPath] != nil) {
+        
+        // For some reason, UICollectionViewFocusUpdateContext never gives us the current focused
+        // index path. This ugly workaround is used to find the currently focused item for now.
+        NSIndexPath* focusedIndexPath;
+        NSArray* visibleCells = [collectionView visibleCells];
+        for (int i = 0; i < [visibleCells count]; ++i) {
+            if ([visibleCells[i] isFocused]) {
+                focusedIndexPath = [collectionView indexPathForCell:visibleCells[i]];
+                break;
+            }
+        }
+        
+        // Set view background to stretched box art image and blur it
+        TemporaryApp* focusedApp = _sortedAppList[focusedIndexPath.row];
+        UIImage* backgroundArt = [_backgroundCache objectForKey:focusedApp];
+        [_blurredBackgroundView setBackgroundColor:[UIColor colorWithPatternImage:backgroundArt]];
+    }
+    
+}
+
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
     if ([segue.destinationViewController isKindOfClass:[StreamFrameViewController class]]) {
         StreamFrameViewController* streamFrame = segue.destinationViewController;
@@ -907,7 +933,8 @@ static NSMutableSet* hostList;
     
     // Restore focus on the selected app on view controller pop navigation
     self.restoresFocusAfterTransition = NO;
-    self.collectionView.remembersLastFocusedIndexPath = YES;
+    //self.collectionView.remembersLastFocusedIndexPath = YES;
+    self.collectionView.remembersLastFocusedIndexPath = NO;
     
     _menuRecognizer = [[UITapGestureRecognizer alloc] init];
     [_menuRecognizer addTarget:self action: @selector(showHostSelectionView)];
@@ -935,11 +962,19 @@ static NSMutableSet* hostList;
     }
     
     _boxArtCache = [[NSCache alloc] init];
+    _backgroundCache = [[NSCache alloc] init];
         
     hostScrollView = [[ComputerScrollView alloc] init];
     hostScrollView.frame = CGRectMake(0, self.navigationController.navigationBar.frame.origin.y + self.navigationController.navigationBar.frame.size.height, self.view.frame.size.width, self.view.frame.size.height / 2);
     [hostScrollView setShowsHorizontalScrollIndicator:NO];
     hostScrollView.delaysContentTouches = NO;
+    
+    // Create blurred bg view
+    _blurredBackgroundView = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleRegular]];
+    _blurredBackgroundView.frame = CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height);
+    [self.view addSubview:_blurredBackgroundView];
+    [self.view sendSubviewToBack:_blurredBackgroundView];
+    [self.view setBackgroundColor:[UIColor clearColor]];
     
     self.collectionView.delaysContentTouches = NO;
     self.collectionView.allowsMultipleSelection = NO;
@@ -1108,6 +1143,9 @@ static NSMutableSet* hostList;
     // Purge the box art cache
     [_boxArtCache removeAllObjects];
     
+    // Purge the background art cache
+    [_backgroundCache removeAllObjects];
+    
     // Remove our lifetime observers to avoid triggering them
     // while streaming
     [[NSNotificationCenter defaultCenter] removeObserver:self];
@@ -1274,6 +1312,17 @@ static NSMutableSet* hostList;
         if (image != nil) {
             // Add the image to our cache if it was present
             [_boxArtCache setObject:image forKey:app];
+            
+            // Cache stretched version of box art for collection view background
+            // Calculate appropriate scale factor so that box art completely fills the window
+            float widthRatio = self.view.frame.size.width / image.size.width;
+            float heightRatio = self.view.frame.size.height / image.size.height;
+            float scaleFactor = widthRatio > heightRatio ? widthRatio : heightRatio;
+            
+            UIImage* stretchedImage = [UIImage imageWithCGImage:[image CGImage]
+                                                          scale:1/scaleFactor
+                                                    orientation:UIImageOrientationUp];
+            [_backgroundCache setObject:stretchedImage forKey:app];
         }
     }
 }
@@ -1352,6 +1401,9 @@ static NSMutableSet* hostList;
     
     // Purge the box art cache on low memory
     [_boxArtCache removeAllObjects];
+    
+    // Purge the background art cache on low memory
+    [_backgroundCache removeAllObjects];
 }
 
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
