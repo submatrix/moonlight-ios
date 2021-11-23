@@ -25,6 +25,7 @@
     char _hostString[256];
     char _appVersionString[32];
     char _gfeVersionString[32];
+    char _rtspSessionUrl[128];
 }
 
 static NSLock* initLock;
@@ -145,6 +146,7 @@ int DrSubmitDecodeUnit(PDECODE_UNIT decodeUnit)
             ret = [renderer submitDecodeBuffer:(unsigned char*)entry->data
                                         length:entry->length
                                     bufferType:entry->bufferType
+                                     frameType:decodeUnit->frameType
                                            pts:decodeUnit->presentationTimeMs];
             if (ret != DR_OK) {
                 free(data);
@@ -163,6 +165,7 @@ int DrSubmitDecodeUnit(PDECODE_UNIT decodeUnit)
     return [renderer submitDecodeBuffer:data
                                  length:offset
                              bufferType:BUFFER_TYPE_PICDATA
+                              frameType:decodeUnit->frameType
                                     pts:decodeUnit->presentationTimeMs];
 }
 
@@ -408,12 +411,20 @@ void ClConnectionStatusUpdate(int status)
                 [config.gfeVersion cStringUsingEncoding:NSUTF8StringEncoding],
                 sizeof(_gfeVersionString));
     }
+    if (config.rtspSessionUrl != nil) {
+        strncpy(_rtspSessionUrl,
+                [config.rtspSessionUrl cStringUsingEncoding:NSUTF8StringEncoding],
+                sizeof(_rtspSessionUrl));
+    }
 
     LiInitializeServerInformation(&_serverInfo);
     _serverInfo.address = _hostString;
     _serverInfo.serverInfoAppVersion = _appVersionString;
     if (config.gfeVersion != nil) {
         _serverInfo.serverInfoGfeVersion = _gfeVersionString;
+    }
+    if (config.rtspSessionUrl != nil) {
+        _serverInfo.rtspSessionUrl = _rtspSessionUrl;
     }
 
     renderer = myRenderer;
@@ -426,6 +437,10 @@ void ClConnectionStatusUpdate(int status)
     _streamConfig.bitrate = config.bitRate;
     _streamConfig.enableHdr = config.enableHdr;
     _streamConfig.audioConfiguration = config.audioConfiguration;
+    
+    // TODO: If/when video encryption is added, we'll probably want to
+    // limit that to devices that support the ARMv8 AES instructions.
+    _streamConfig.encryptionFlags = ENCFLG_AUDIO;
     
     // Use some of the HEVC encoding efficiency improvements to
     // reduce bandwidth usage while still gaining some image
@@ -459,7 +474,11 @@ void ClConnectionStatusUpdate(int status)
     // to freeze after a few minutes with HEVC prior to iOS 11.3.
     // As a result, we will only use HEVC on iOS 11.3 or later.
     if (@available(iOS 11.3, tvOS 11.3, *)) {
-        _streamConfig.supportsHevc = config.allowHevc && VTIsHardwareDecodeSupported(kCMVideoCodecType_HEVC);
+        _streamConfig.supportsHevc =
+#if !TARGET_OS_TV
+            config.allowHevc &&
+#endif
+            VTIsHardwareDecodeSupported(kCMVideoCodecType_HEVC);
     }
     
     // HEVC must be supported when HDR is enabled
@@ -477,7 +496,12 @@ void ClConnectionStatusUpdate(int status)
 
     // RFI doesn't work properly with HEVC on iOS 11 with an iPhone SE (at least)
     // It doesnt work on macOS either, tested with Network Link Conditioner.
-    _drCallbacks.capabilities = CAPABILITY_REFERENCE_FRAME_INVALIDATION_AVC |
+    // RFI seems to be broken at all resolutions on the Apple TV 4K (1st gen)
+    // on tvOS 14.5.
+    _drCallbacks.capabilities =
+#if !TARGET_OS_TV
+                                CAPABILITY_REFERENCE_FRAME_INVALIDATION_AVC |
+#endif
                                 CAPABILITY_DIRECT_SUBMIT;
 
     LiInitializeAudioCallbacks(&_arCallbacks);

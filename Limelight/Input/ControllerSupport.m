@@ -225,6 +225,13 @@ static const double MOUSE_SPEED_DIVISOR = 2.5;
         controller.controllerPausedHandler = NULL;
         
         if (controller.extendedGamepad != NULL) {
+            // Re-enable system gestures on the gamepad buttons now
+            if (@available(iOS 14.0, tvOS 14.0, *)) {
+                for (GCControllerElement* element in controller.extendedGamepad.allElements) {
+                    element.preferredSystemGestureState = GCSystemGestureStateEnabled;
+                }
+            }
+            
             controller.extendedGamepad.valueChangedHandler = NULL;
         }
         else if (controller.gamepad != NULL) {
@@ -281,6 +288,14 @@ static const double MOUSE_SPEED_DIVISOR = 2.5;
         }
         
         if (controller.extendedGamepad != NULL) {
+            // Disable system gestures on the gamepad to avoid interfering
+            // with in-game controller actions
+            if (@available(iOS 14.0, tvOS 14.0, *)) {
+                for (GCControllerElement* element in controller.extendedGamepad.allElements) {
+                    element.preferredSystemGestureState = GCSystemGestureStateDisabled;
+                }
+            }
+            
             controller.extendedGamepad.valueChangedHandler = ^(GCExtendedGamepad *gamepad, GCControllerElement *element) {
                 Controller* limeController = [self->_controllers objectForKey:[NSNumber numberWithInteger:gamepad.controller.playerIndex]];
                 short leftStickX, leftStickY;
@@ -418,7 +433,11 @@ static const double MOUSE_SPEED_DIVISOR = 2.5;
         }
     }
     
-    // TODO: Confirm scroll direction
+    // We use UIPanGestureRecognizer on iPadOS because it allows us to distinguish
+    // between discrete and continuous scroll events and also works around a bug
+    // in iPadOS 15 where discrete scroll events are dropped. tvOS only supports
+    // GCMouse for mice, so we will have to just use it and hope for the best.
+#if TARGET_OS_TV
     mouse.mouseInput.scroll.yAxis.valueChangedHandler = ^(GCControllerAxisInput * _Nonnull axis, float value) {
         self->accumulatedScrollY += -value;
         
@@ -430,6 +449,7 @@ static const double MOUSE_SPEED_DIVISOR = 2.5;
             self->accumulatedScrollY -= truncatedScrollY;
         }
     };
+#endif
 }
 
 -(void) updateAutoOnScreenControlMode

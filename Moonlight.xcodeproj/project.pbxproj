@@ -1111,7 +1111,7 @@
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = ERJX2JC43C;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1130,7 +1130,7 @@
 					"$(PROJECT_DIR)/libs/openssl/lib/tvOS",
 					"$(PROJECT_DIR)/libs/opus/lib/tvOS",
 				);
-				MARKETING_VERSION = 7.0.3;
+				MARKETING_VERSION = 7.1.3;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.moonlight-stream.Moonlight-jko";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1156,7 +1156,7 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = ERJX2JC43C;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1175,7 +1175,7 @@
 					"$(PROJECT_DIR)/libs/openssl/lib/tvOS",
 					"$(PROJECT_DIR)/libs/opus/lib/tvOS",
 				);
-				MARKETING_VERSION = 7.0.3;
+				MARKETING_VERSION = 7.1.3;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.moonlight-stream.Moonlight-jko";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1323,7 +1323,7 @@
 					"$(PROJECT_DIR)/libs/opus/lib/iOS",
 					"$(PROJECT_DIR)/libs/openssl/lib/iOS",
 				);
-				MARKETING_VERSION = 7.0.3;
+				MARKETING_VERSION = 7.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.moonlight-stream.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
@@ -1363,7 +1363,7 @@
 					"$(PROJECT_DIR)/libs/opus/lib/iOS",
 					"$(PROJECT_DIR)/libs/openssl/lib/iOS",
 				);
-				MARKETING_VERSION = 7.0.3;
+				MARKETING_VERSION = 7.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.moonlight-stream.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
